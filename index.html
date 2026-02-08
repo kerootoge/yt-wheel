@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <style>/* ... CSS 跟之前一樣 ... */</style>
+</head>
+<body>
+    <div id="wheel-container"><div id="arrow"></div><canvas id="wheel" width="600" height="600"></canvas></div>
+    <div id="result-display">準備中...</div>
+
+    <script>
+        // 設定 Pusher
+        const pusher = new Pusher('你的key', { cluster: '你的cluster' });
+        const channel = pusher.subscribe('wheel-channel');
+
+        // 監聽來自雲端的事件
+        channel.bind('spin-event', function(data) {
+            if (!isSpinning) startSpin();
+        });
+
+        // ... (Canvas 繪圖與 startSpin 邏輯跟之前完全一樣) ...
+        // 注意：回傳結果可以用一個簡單的 API 發回你的電腦，或是單純在畫面上顯示就好
+    </script>
+</body>
+</html>
