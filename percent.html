@@ -5,26 +5,41 @@
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body {
-            background: transparent; /* 背景透明，方便疊加 */
+            background: transparent; /* 背景透明，方便 OBS 疊加 */
             color: #ffffff;
             font-family: "Microsoft JhengHei", sans-serif;
             display: flex;
+            flex-direction: column; /* 讓標題跟數字上下排列 */
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             overflow: hidden;
         }
-        #progress-text {
-            font-size: 80px;
+
+        /* 標題樣式 */
+        #title {
+            font-size: 36px;
             font-weight: bold;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 20px #00d2ff;
+            margin-bottom: -10px; /* 縮短與數字的距離 */
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 15px #2ecc71; /* 綠色發光 */
+            letter-spacing: 4px;
+        }
+
+        /* 數字樣式 */
+        #progress-text {
+            font-size: 90px;
+            font-weight: bold;
+            /* 將原本的 #00d2ff (藍) 改為 #2ecc71 (淺綠) */
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 25px #2ecc71; 
             letter-spacing: 2px;
+            transition: all 0.3s ease;
         }
     </style>
 </head>
 <body>
 
+    <div id="title">Endymionゲージ</div>
     <div id="progress-text">0.0%</div>
 
     <script>
@@ -41,10 +56,14 @@
         channel.bind('progress-update', function(data) {
             if (data.percent) {
                 progressDiv.innerText = data.percent;
-                // 加入一個簡單的閃爍效果，代表數值有變動
-                progressDiv.style.color = "#00ffcc";
+                
+                // 變動時的閃爍效果改為明亮的淺綠色
+                progressDiv.style.color = "#a1e5a1";
+                progressDiv.style.transform = "scale(1.1)"; // 數字跳動感
+                
                 setTimeout(() => {
                     progressDiv.style.color = "#ffffff";
+                    progressDiv.style.transform = "scale(1.0)";
                 }, 500);
             }
         });
