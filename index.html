@@ -34,7 +34,7 @@
             height: 0; 
             border-left: 30px solid transparent; 
             border-right: 30px solid transparent; 
-            border-top: 50px solid #2ecc71; /* 改為與轉盤色系相符的綠箭頭 */
+            border-top: 50px solid #2ecc71; 
             z-index: 10; 
             filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); 
         }
@@ -68,15 +68,13 @@
         const ctx = canvas.getContext('2d');
         const resDiv = document.getElementById('result-display');
         
-        // 選項順序
         const options = ["+20%", "+30%", "+50%", "+20%", "+30%", "+100%"];
         
-        // 💡 顏色對應表：越高越深
         const colorMap = {
-            "+20%": "#a1e5a1", // 淺綠
-            "+30%": "#64d264", // 中綠
-            "+50%": "#27ae60", // 深綠
-            "+100%": "#145a32" // 特深綠
+            "+20%": "#a1e5a1", 
+            "+30%": "#64d264", 
+            "+50%": "#27ae60", 
+            "+100%": "#145a32" 
         };
 
         let isSpinning = false;
@@ -96,17 +94,22 @@
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.arc(0, 0, 280, 0, arc);
-                
-                // 💡 根據文字決定顏色
                 ctx.fillStyle = colorMap[text];
-                
                 ctx.fill();
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 6;
                 ctx.stroke();
 
                 ctx.rotate(arc / 2);
-                ctx.fillStyle = (text === "+20%") ? "#2c3e50" : "white"; // 淺色背景配深色字較清楚
+                
+                // --- 修改處：字體統一為白色 ---
+                ctx.fillStyle = "white"; 
+                // 加上陰影防止在淺色背景上看不清
+                ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                
                 ctx.font = "bold 50px Microsoft JhengHei";
                 ctx.textAlign = "right";
                 ctx.fillText(text, 250, 18);
@@ -138,7 +141,6 @@
             resDiv.innerText = "🎊 隨機加成中... 🎊";
             resDiv.classList.remove('show-result');
 
-            // 隨機選一個匹配的索引（因為有兩個 +20% 和 +30%）
             const matchingIndices = options.map((v, i) => v === targetReward ? i : -1).filter(i => i !== -1);
             const finalIdx = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
             
