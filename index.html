@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>轉盤演出系統</title>
+    <title>轉盤演出系統 - 綠色階梯版</title>
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body { 
@@ -34,25 +34,25 @@
             height: 0; 
             border-left: 30px solid transparent; 
             border-right: 30px solid transparent; 
-            border-top: 50px solid #ff4757; 
+            border-top: 50px solid #2ecc71; /* 改為與轉盤色系相符的綠箭頭 */
             z-index: 10; 
             filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); 
         }
 
         #result-display { 
             margin-top: 30px; 
-            font-size: 60px; 
+            font-size: 70px; 
             font-weight: bold; 
             text-shadow: 0 0 20px rgba(0,0,0,0.5); 
-            min-height: 80px; 
+            min-height: 100px; 
             text-align: center; 
             transition: all 0.5s ease;
         }
 
         .show-result {
-            color: #ffff00 !important;
-            text-shadow: 0 0 30px rgba(255, 255, 0, 0.8), 2px 2px 5px black !important;
-            transform: scale(1.2);
+            color: #ffffff !important;
+            text-shadow: 0 0 30px rgba(46, 204, 113, 0.8), 2px 2px 8px black !important;
+            transform: scale(1.3);
         }
     </style>
 </head>
@@ -68,13 +68,21 @@
         const ctx = canvas.getContext('2d');
         const resDiv = document.getElementById('result-display');
         
-        const options = ["加量 10%", "加量 20%", "大驚喜", "加量 50%", "銘謝惠顧", "超級大獎"];
+        // 選項順序
+        const options = ["+20%", "+30%", "+50%", "+20%", "+30%", "+100%"];
         
+        // 💡 顏色對應表：越高越深
+        const colorMap = {
+            "+20%": "#a1e5a1", // 淺綠
+            "+30%": "#64d264", // 中綠
+            "+50%": "#27ae60", // 深綠
+            "+100%": "#145a32" // 特深綠
+        };
+
         let isSpinning = false;
         let currentRotation = 0;
         let spinQueue = []; 
 
-        // 1. 繪製轉盤 (抽離出來確保能被呼叫)
         function drawWheel() {
             if (!canvas.getContext) return;
             const arc = (2 * Math.PI) / options.length;
@@ -88,31 +96,31 @@
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.arc(0, 0, 280, 0, arc);
-                ctx.fillStyle = i % 2 === 0 ? '#1e90ff' : '#3742fa';
+                
+                // 💡 根據文字決定顏色
+                ctx.fillStyle = colorMap[text];
+                
                 ctx.fill();
                 ctx.strokeStyle = "white";
-                ctx.lineWidth = 5;
+                ctx.lineWidth = 6;
                 ctx.stroke();
 
                 ctx.rotate(arc / 2);
-                ctx.fillStyle = "white";
-                ctx.font = "bold 42px Microsoft JhengHei";
+                ctx.fillStyle = (text === "+20%") ? "#2c3e50" : "white"; // 淺色背景配深色字較清楚
+                ctx.font = "bold 50px Microsoft JhengHei";
                 ctx.textAlign = "right";
-                ctx.fillText(text, 260, 15);
+                ctx.fillText(text, 250, 18);
                 ctx.restore();
             });
         }
 
-        // 頁面載入完畢立刻繪製
         window.onload = drawWheel;
 
-        // 2. Pusher 初始化
         const pusher = new Pusher('fc2f1ab8fb364bb25513', { cluster: 'ap3' });
         const channel = pusher.subscribe('my-channel');
 
         channel.bind('my-event', function(data) {
             if (data.message === 'spin' && data.reward) {
-                console.log("收到指令: " + data.reward);
                 spinQueue.push(data.reward); 
                 processQueue();
             }
@@ -127,19 +135,19 @@
 
         function startSpin(targetReward) {
             isSpinning = true;
-            resDiv.innerText = "🎊 隨機抽獎中... 🎊";
+            resDiv.innerText = "🎊 隨機加成中... 🎊";
             resDiv.classList.remove('show-result');
 
-            const targetIdx = options.indexOf(targetReward);
-            const finalIdx = targetIdx !== -1 ? targetIdx : 0;
+            // 隨機選一個匹配的索引（因為有兩個 +20% 和 +30%）
+            const matchingIndices = options.map((v, i) => v === targetReward ? i : -1).filter(i => i !== -1);
+            const finalIdx = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
+            
             const segmentAngle = 360 / options.length;
             const stopAngle = 360 - (finalIdx * segmentAngle) - (segmentAngle / 2);
             
-            // 轉 12 圈
             currentRotation += (12 * 360) + (stopAngle - (currentRotation % 360));
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
-            // 5.2 秒後停穩顯示結果
             setTimeout(() => {
                 resDiv.innerText = "🎊 " + targetReward + " 🎊";
                 resDiv.classList.add('show-result');
