@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
+    <style>
+        body {
+            background: transparent; /* 背景透明，方便疊加 */
+            color: #ffffff;
+            font-family: "Microsoft JhengHei", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #progress-text {
+            font-size: 80px;
+            font-weight: bold;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 20px #00d2ff;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress-text">0.0%</div>
+
+    <script>
+        const progressDiv = document.getElementById('progress-text');
+
+        // 初始化 Pusher
+        const pusher = new Pusher('fc2f1ab8fb364bb25513', {
+            cluster: 'ap3'
+        });
+
+        const channel = pusher.subscribe('my-channel');
+
+        // 監聽進度更新事件
+        channel.bind('progress-update', function(data) {
+            if (data.percent) {
+                progressDiv.innerText = data.percent;
+                // 加入一個簡單的閃爍效果，代表數值有變動
+                progressDiv.style.color = "#00ffcc";
+                setTimeout(() => {
+                    progressDiv.style.color = "#ffffff";
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
