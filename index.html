@@ -138,7 +138,7 @@
 
         function startSpin(targetReward) {
             isSpinning = true;
-            resDiv.innerText = "🎊 隨機加成中... 🎊";
+            resDiv.innerText = "💃 逃げるな... 💃";
             resDiv.classList.remove('show-result');
 
             const matchingIndices = options.map((v, i) => v === targetReward ? i : -1).filter(i => i !== -1);
@@ -151,13 +151,13 @@
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
             setTimeout(() => {
-                resDiv.innerText = "🎊 " + targetReward + " 🎊";
+                resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
                 
                 setTimeout(() => {
                     isSpinning = false;
                     resDiv.classList.remove('show-result');
-                    resDiv.innerText = "準備就緒";
+                    resDiv.innerText = "READY";
                     processQueue(); 
                 }, 4000);
             }, 5200);
@@ -165,3 +165,4 @@
     </script>
 </body>
 </html>
+
