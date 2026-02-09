@@ -1,158 +1,40 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <title>Pusher 轉盤演出系統</title>
-    <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
-    <style>
-        body { 
-            background: transparent; 
-            color: white; 
-            font-family: "Microsoft JhengHei", sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
-            overflow: hidden; 
-        }
-        #wheel-container { 
-            position: relative; 
-            width: 600px; 
-            height: 600px; 
-        }
-        canvas { 
-            width: 100%; 
-            height: 100%; 
-            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); 
-        }
-        /* 指針樣式 */
-        #arrow { 
-            position: absolute; 
-            top: -10px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 0; 
-            height: 0; 
-            border-left: 30px solid transparent; 
-            border-right: 30px solid transparent; 
-            border-top: 50px solid #ff4757; 
-            z-index: 10; 
-            filter: drop-shadow(0 0 5px black); 
-        }
-        /* 結果顯示文字 */
-        #result-display { 
-            margin-top: 30px; 
-            font-size: 60px; 
-            font-weight: bold; 
-            text-shadow: 0 0 20px rgba(255,255,0,0.8), 2px 2px 5px black; 
-            min-height: 80px; 
-            text-align: center; 
-        }
-    </style>
-</head>
-<body>
+// --- 修改後的 Pusher 監聽部分 ---
+channel.bind('my-event', function(data) {
+    if (data.message === 'spin' && data.reward) {
+        console.log("收到抽獎指令，結果為: " + data.reward);
+        spinQueue.push(data.reward); // 將特定結果放進隊列
+        processQueue();
+    }
+});
 
-    <div id="wheel-container">
-        <div id="arrow"></div>
-        <canvas id="wheel" width="600" height="600"></canvas>
-    </div>
-    <div id="result-display">等待指令...</div>
+let spinQueue = []; // 改為儲存結果的陣列
 
-    <script>
-        const canvas = document.getElementById('wheel');
-        const ctx = canvas.getContext('2d');
-        const resDiv = document.getElementById('result-display');
-        const options = ["加量 10%", "加量 20%", "大驚喜", "加量 50%", "銘謝惠顧", "超級大獎"];
-        
-        let isSpinning = false;
-        let currentRotation = 0;
-        let spinQueue = 0; // 抽獎指令隊列
+function processQueue() {
+    if (spinQueue.length > 0 && !isSpinning) {
+        const nextReward = spinQueue.shift(); // 取出下一個預定結果
+        startSpin(nextReward);
+    }
+}
 
-        // --- 1. Pusher 初始化 ---
-        const pusher = new Pusher('fc2f1ab8fb364bb25513', {
-            cluster: 'ap3'
-        });
+function startSpin(targetReward) {
+    isSpinning = true;
+    resDiv.innerText = "🎊 正在接收結果... 🎊";
 
-        const channel = pusher.subscribe('my-channel');
+    // 找到該獎項在 options 中的 index
+    const targetIdx = options.indexOf(targetReward);
+    if (targetIdx === -1) { isSpinning = false; return; } // 安全檢查
 
-        // 監聽來自 Python 的 spin 訊號
-        channel.bind('my-event', function(data) {
-            if (data.message === 'spin') {
-                console.log("收到抽獎指令");
-                spinQueue++;
-                processQueue();
-            }
-        });
-
-        // --- 2. 轉盤繪製邏輯 ---
-        function draw() {
-            const arc = (2 * Math.PI) / options.length;
-            options.forEach((text, i) => {
-                ctx.save();
-                ctx.translate(300, 300);
-                // 物理校正：起始點減去 90 度，確保第一個選項在正上方
-                ctx.rotate(i * arc - Math.PI / 2);
-                
-                // 畫扇形
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.arc(0, 0, 280, 0, arc);
-                ctx.fillStyle = i % 2 === 0 ? '#1e90ff' : '#3742fa';
-                ctx.fill();
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = 5;
-                ctx.stroke();
-
-                // 寫文字
-                ctx.rotate(arc / 2);
-                ctx.fillStyle = "white";
-                ctx.font = "bold 44px Microsoft JhengHei";
-                ctx.textAlign = "right";
-                ctx.fillText(text, 260, 15);
-                ctx.restore();
-            });
-        }
-        draw();
-
-        // --- 3. 隊列處理 ---
-        function processQueue() {
-            if (spinQueue > 0 && !isSpinning) {
-                spinQueue--;
-                startSpin();
-            }
-        }
-
-        // --- 4. 旋轉動畫 ---
-        function startSpin() {
-            isSpinning = true;
-            resDiv.innerText = "🎊 隨機抽獎中 🎊";
-
-            // 隨機決定停止位置 (純演出)
-            const targetIdx = Math.floor(Math.random() * options.length);
-            const segmentAngle = 360 / options.length;
-            
-            // 計算角度偏移量
-            const stopAngle = 360 - (targetIdx * segmentAngle) - (segmentAngle / 2);
-            // 基礎旋轉 10 圈 + 偏移量
-            currentRotation += (10 * 360) + (stopAngle - (currentRotation % 360));
-            
-            canvas.style.transform = `rotate(${currentRotation}deg)`;
-            
-            // 等待動畫結束 (5秒旋轉 + 0.2秒緩衝)
-            setTimeout(() => {
-                const result = options[targetIdx];
-                resDiv.innerText = "演出結果: " + result;
-                
-                // 停留 3 秒顯示結果後，準備下一場演出
-                setTimeout(() => {
-                    isSpinning = false;
-                    processQueue(); // 檢查隊列中是否還有下一場
-                }, 3000);
-                
-            }, 5200);
-        }
-    </script>
-</body>
-</html>
+    const segmentAngle = 360 / options.length;
+    const stopAngle = 360 - (targetIdx * segmentAngle) - (segmentAngle / 2);
+    currentRotation += (10 * 360) + (stopAngle - (currentRotation % 360));
+    
+    canvas.style.transform = `rotate(${currentRotation}deg)`;
+    
+    setTimeout(() => {
+        resDiv.innerText = "🎊 " + targetReward + " 🎊";
+        setTimeout(() => {
+            isSpinning = false;
+            processQueue();
+        }, 3000);
+    }, 5200);
+}
