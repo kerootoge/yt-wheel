@@ -1,40 +1,96 @@
-// --- 修改後的 Pusher 監聽部分 ---
-channel.bind('my-event', function(data) {
-    if (data.message === 'spin' && data.reward) {
-        console.log("收到抽獎指令，結果為: " + data.reward);
-        spinQueue.push(data.reward); // 將特定結果放進隊列
-        processQueue();
-    }
-});
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
+    <style>
+        body { background: transparent; color: white; font-family: "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        #wheel-container { position: relative; width: 600px; height: 600px; }
+        canvas { width: 100%; height: 100%; transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); }
+        #arrow { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 30px solid transparent; border-right: 30px solid transparent; border-top: 50px solid #ff4757; z-index: 10; filter: drop-shadow(0 0 5px black); }
+        #result-display { margin-top: 30px; font-size: 60px; font-weight: bold; text-shadow: 0 0 20px rgba(255,255,0,0.8), 2px 2px 5px black; min-height: 80px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="wheel-container"><div id="arrow"></div><canvas id="wheel" width="600" height="600"></canvas></div>
+    <div id="result-display">等待指令...</div>
 
-let spinQueue = []; // 改為儲存結果的陣列
+    <script>
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const resDiv = document.getElementById('result-display');
+        // ⚠️ 請確保這裡的順序與 Python 的 OPTIONS 陣列完全一致
+        const options = ["加量 10%", "加量 20%", "大驚喜", "加量 50%", "銘謝惠顧", "超級大獎"];
+        
+        let isSpinning = false;
+        let currentRotation = 0;
+        let spinQueue = []; // 隊列改為儲存獎項名稱
 
-function processQueue() {
-    if (spinQueue.length > 0 && !isSpinning) {
-        const nextReward = spinQueue.shift(); // 取出下一個預定結果
-        startSpin(nextReward);
-    }
-}
+        // 初始化 Pusher
+        const pusher = new Pusher('fc2f1ab8fb364bb25513', { cluster: 'ap3' });
+        const channel = pusher.subscribe('my-channel');
 
-function startSpin(targetReward) {
-    isSpinning = true;
-    resDiv.innerText = "🎊 正在接收結果... 🎊";
+        // 接收 Pusher 訊號
+        channel.bind('my-event', function(data) {
+            // 這裡接收 Python 傳來的 reward 欄位
+            if (data.message === 'spin' && data.reward) {
+                console.log("收到指令，預定結果: " + data.reward);
+                spinQueue.push(data.reward); 
+                processQueue();
+            }
+        });
 
-    // 找到該獎項在 options 中的 index
-    const targetIdx = options.indexOf(targetReward);
-    if (targetIdx === -1) { isSpinning = false; return; } // 安全檢查
+        function draw() {
+            const arc = (2 * Math.PI) / options.length;
+            options.forEach((text, i) => {
+                ctx.save();
+                ctx.translate(300, 300);
+                ctx.rotate(i * arc - Math.PI / 2);
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 280, 0, arc);
+                ctx.fillStyle = i % 2 === 0 ? '#1e90ff' : '#3742fa';
+                ctx.fill(); ctx.strokeStyle = "white"; ctx.lineWidth = 5; ctx.stroke();
+                ctx.rotate(arc / 2); ctx.fillStyle = "white"; ctx.font = "bold 44px Microsoft JhengHei";
+                ctx.textAlign = "right"; ctx.fillText(text, 260, 15); ctx.restore();
+            });
+        }
+        draw();
 
-    const segmentAngle = 360 / options.length;
-    const stopAngle = 360 - (targetIdx * segmentAngle) - (segmentAngle / 2);
-    currentRotation += (10 * 360) + (stopAngle - (currentRotation % 360));
-    
-    canvas.style.transform = `rotate(${currentRotation}deg)`;
-    
-    setTimeout(() => {
-        resDiv.innerText = "🎊 " + targetReward + " 🎊";
-        setTimeout(() => {
-            isSpinning = false;
-            processQueue();
-        }, 3000);
-    }, 5200);
-}
+        function processQueue() {
+            if (spinQueue.length > 0 && !isSpinning) {
+                const nextReward = spinQueue.shift();
+                startSpin(nextReward);
+            }
+        }
+
+        function startSpin(targetReward) {
+            isSpinning = true;
+            resDiv.innerText = "🎊 正在轉動... 🎊";
+
+            // --- 核心修正：找到獎項對應的索引 ---
+            const targetIdx = options.indexOf(targetReward);
+            
+            // 如果 Python 給的獎項不在清單內，隨機選一個避免卡死 (安全機制)
+            const finalIdx = targetIdx !== -1 ? targetIdx : 0;
+
+            const segmentAngle = 360 / options.length;
+            
+            // 計算停止角度：
+            // stopAngle 讓指針落在該扇形的中央
+            const stopAngle = 360 - (finalIdx * segmentAngle) - (segmentAngle / 2);
+            
+            // 累加旋轉：維持當前旋轉量並加上多圈旋轉
+            currentRotation += (10 * 360) + (stopAngle - (currentRotation % 360));
+            
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            
+            setTimeout(() => {
+                resDiv.innerText = "🎊 " + targetReward + " 🎊";
+                setTimeout(() => {
+                    isSpinning = false;
+                    processQueue();
+                }, 3000);
+            }, 5200);
+        }
+    </script>
+</body>
+</html>
