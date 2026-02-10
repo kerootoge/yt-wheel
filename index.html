@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>轉盤演出系統 - 範例完全對齊版</title>
+    <title>轉盤演出系統 - 觀賞強化版</title>
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body { 
@@ -18,28 +18,23 @@
             overflow: hidden; 
         }
 
-        /* --- 完全對齊 percent.html 的 UI 與 0.3s 節奏 --- */
         #result-display { 
             margin-bottom: 30px; 
             font-size: 70px; 
             font-weight: bold; 
             min-height: 100px; 
             text-align: center; 
-            
-            /* 對齊範例：0.3s ease */
-            transition: all 0.3s ease; 
-            
+            transition: all 0.3s ease; /* 對齊範例節奏 */
             color: #ffffff;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 15px #2ecc71; 
             letter-spacing: 4px;
             transform: scale(1.0);
         }
 
-        /* 對齊範例：1.1倍 */
         .show-result {
             color: #a1e5a1 !important;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 25px #2ecc71 !important;
-            transform: scale(1.1) !important;
+            transform: scale(1.1) !important; /* 對齊範例倍率 */
         }
 
         #wheel-container { position: relative; width: 600px; height: 600px; }
@@ -144,21 +139,20 @@
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
             setTimeout(() => {
-                // 1. 中獎瞬間：放大 (對齊範例)
+                // 1. 放大展示階段 (0.5秒)
                 resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
                 
-                // 2. 停留 500ms (對齊範例)
                 setTimeout(() => {
-                    // 3. 縮回原大小
+                    // 2. 縮回原大小
                     resDiv.classList.remove('show-result');
                     
-                    // 4. 維持內容讓觀眾看清，隨後才重置
+                    // 3. [修改重點] 留在畫面上 30 秒，讓鬼...不是，讓全場觀眾都看到
                     setTimeout(() => {
                         resDiv.innerText = "READY";
                         isSpinning = false;
                         processQueue(); 
-                    }, 1500);
+                    }, 30000); // 30000ms = 30s
                 }, 500); 
             }, 5200);
         }
