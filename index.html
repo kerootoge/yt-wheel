@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>轉盤演出系統 - 觀賞強化版</title>
+    <title>轉盤演出系統 - 佇列重置版</title>
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body { 
@@ -18,45 +18,38 @@
             overflow: hidden; 
         }
 
+        /* 文字顯示：對齊 percent.html */
         #result-display { 
             margin-bottom: 30px; 
             font-size: 70px; 
             font-weight: bold; 
             min-height: 100px; 
             text-align: center; 
-            transition: all 0.3s ease; /* 對齊範例節奏 */
+            transition: all 0.3s ease; 
             color: #ffffff;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 15px #2ecc71; 
             letter-spacing: 4px;
             transform: scale(1.0);
         }
 
+        /* 放大效果：對齊 percent.html (1.1倍) */
         .show-result {
             color: #a1e5a1 !important;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 25px #2ecc71 !important;
-            transform: scale(1.1) !important; /* 對齊範例倍率 */
+            transform: scale(1.1) !important;
         }
 
         #wheel-container { position: relative; width: 600px; height: 600px; }
-        
         canvas { 
             width: 100%; 
             height: 100%; 
             transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); 
         }
-
         #arrow { 
-            position: absolute; 
-            top: -10px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 0; 
-            height: 0; 
-            border-left: 30px solid transparent; 
-            border-right: 30px solid transparent; 
-            border-top: 50px solid #2ecc71; 
-            z-index: 10; 
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); 
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%); 
+            width: 0; height: 0; border-left: 30px solid transparent; 
+            border-right: 30px solid transparent; border-top: 50px solid #2ecc71; 
+            z-index: 10; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); 
         }
     </style>
 </head>
@@ -74,9 +67,7 @@
         const resDiv = document.getElementById('result-display');
         
         const options = ["+20%", "+30%", "+50%", "+20%", "+30%", "+100%"];
-        const colorMap = {
-            "+20%": "#a1e5a1", "+30%": "#64d264", "+50%": "#27ae60", "+100%": "#145a32" 
-        };
+        const colorMap = { "+20%": "#a1e5a1", "+30%": "#64d264", "+50%": "#27ae60", "+100%": "#145a32" };
 
         let isSpinning = false;
         let currentRotation = 0;
@@ -117,6 +108,7 @@
             }
         });
 
+        // 排程處理：會一個接一個跑
         function processQueue() {
             if (spinQueue.length > 0 && !isSpinning) {
                 const nextReward = spinQueue.shift();
@@ -126,12 +118,13 @@
 
         function startSpin(targetReward) {
             isSpinning = true;
+            
+            // [重置] 只要這一輪開始轉，就洗掉上一輪的結果
             resDiv.innerText = "💃 逃げるな... 💃";
             resDiv.classList.remove('show-result');
 
             const matchingIndices = options.map((v, i) => v === targetReward ? i : -1).filter(i => i !== -1);
             const finalIdx = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
-            
             const segmentAngle = 360 / options.length;
             const stopAngle = 360 - (finalIdx * segmentAngle) - (segmentAngle / 2);
             
@@ -139,21 +132,22 @@
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
             setTimeout(() => {
-                // 1. 放大展示階段 (0.5秒)
+                // 顯示結果並放大 (0.3s 動畫, 0.5s 停留)
                 resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
                 
                 setTimeout(() => {
-                    // 2. 縮回原大小
+                    // 縮回原大小
                     resDiv.classList.remove('show-result');
                     
-                    // 3. [修改重點] 留在畫面上 30 秒，讓鬼...不是，讓全場觀眾都看到
-                    setTimeout(() => {
-                        resDiv.innerText = "READY";
-                        isSpinning = false;
-                        processQueue(); 
-                    }, 30000); // 30000ms = 30s
-                }, 500); 
+                    // 標記本輪結束
+                    isSpinning = false;
+                    
+                    // 重點：不寫變回 READY 的代碼，讓結果掛著
+                    // 但立即檢查有沒有下一筆要跑
+                    processQueue(); 
+                    
+                }, 500); // 對齊範例時間
             }, 5200);
         }
     </script>
