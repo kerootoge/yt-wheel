@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>轉盤演出系統 - 動畫優化版</title>
+    <title>轉盤演出系統 - 節奏優化版</title>
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body { 
@@ -26,8 +26,8 @@
             min-height: 100px; 
             text-align: center; 
             
-            /* 平滑縮放效果 */
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            /* 縮短動畫過渡時間，讓縮放更靈敏 */
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
             
             color: #ffffff;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 15px #2ecc71; 
@@ -35,7 +35,7 @@
             transform: scale(1.0);
         }
 
-        /* 中獎演出：放大且加強發光 */
+        /* 中獎演出樣式 */
         .show-result {
             color: #a1e5a1 !important;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 35px #2ecc71 !important;
@@ -148,23 +148,23 @@
             currentRotation += (12 * 360) + (stopAngle - (currentRotation % 360));
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
-            // --- 核心演出的節奏控制 ---
             setTimeout(() => {
-                // 1. 顯示獎項並放大 (停留 2.5 秒)
+                // 1. 顯示中獎並放大
                 resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
                 
+                // [修改] 縮短放大展示時間為 1000ms (1秒)
                 setTimeout(() => {
-                    // 2. 縮小並變回原色 (但內容還是獎項)
+                    // 2. 快速縮回原位
                     resDiv.classList.remove('show-result');
                     
                     setTimeout(() => {
-                        // 3. 最後才變回 READY，並準備下一個
+                        // 3. 變回 READY
                         resDiv.innerText = "READY";
                         isSpinning = false;
                         processQueue(); 
-                    }, 1200); // 給予縮小動畫緩衝與視覺留白
-                }, 2500); 
+                    }, 800); // 縮回後的留白時間
+                }, 1000); 
             }, 5200);
         }
     </script>
