@@ -2,56 +2,46 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>轉盤演出系統 - 標準固定版</title>
+    <title>轉盤演出系統 - 最終回歸版</title>
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body { 
             background: transparent; 
             color: white; 
             font-family: "Microsoft JhengHei", "Meiryo", sans-serif; 
-            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
             height: 100vh; 
-            width: 100vw;
-            position: relative;
+            margin: 0; 
             overflow: hidden; 
         }
 
-        /* --- 轉盤總容器：釘死在左下角 --- */
-        #wheel-container { 
-            position: absolute; 
-            bottom: 50px; 
-            left: 50px; 
-            width: 600px; 
-            height: 600px; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* --- 文字顯示區：固定在轉盤正上方 --- */
+        /* 文字顯示：固定在原本的地方 */
         #result-display { 
-            position: absolute;
-            top: -100px; /* 距離轉盤上邊緣的距離 */
-            width: 800px;
+            margin-bottom: 30px; 
             font-size: 70px; 
             font-weight: bold; 
-            text-align: center;
+            min-height: 100px; 
+            text-align: center; 
             transition: all 0.3s ease; 
             color: #ffffff;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 15px #2ecc71; 
-            letter-spacing: 2px;
+            letter-spacing: 4px;
         }
 
-        /* 中獎時僅改變顏色與發光，不改變大小 */
         .show-result {
             color: #a1e5a1 !important;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 25px #2ecc71 !important;
+            /* 移除原本的 transform: scale(1.1)，讓它完全不放大 */
         }
 
+        #wheel-container { position: relative; width: 600px; height: 600px; }
+        
         canvas { 
             width: 100%; 
             height: 100%; 
-            /* 轉動動畫：5秒平滑旋轉 */
             transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); 
         }
 
@@ -65,14 +55,14 @@
             border-right: 30px solid transparent; 
             border-top: 50px solid #2ecc71; 
             z-index: 10; 
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); 
         }
     </style>
 </head>
 <body>
+    <div id="result-display">SCで回転！</div>
 
     <div id="wheel-container">
-        <div id="result-display">SCで回転！</div>
         <div id="arrow"></div>
         <canvas id="wheel" width="600" height="600"></canvas>
     </div>
@@ -85,6 +75,10 @@
         const options = ["+20%", "+30%", "+50%", "+20%", "+30%", "+100%"];
         const colorMap = { "+20%": "#a1e5a1", "+30%": "#64d264", "+50%": "#27ae60", "+100%": "#145a32" };
 
+        let isSpinning = false;
+        let currentRotation = 0;
+        let spinQueue = []; 
+
         function drawWheel() {
             const arc = (2 * Math.PI) / options.length;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -95,7 +89,7 @@
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.arc(0, 0, 280, 0, arc);
-                ctx.fillStyle = colorMap[text] || "#2ecc71";
+                ctx.fillStyle = colorMap[text];
                 ctx.fill();
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 6;
@@ -120,10 +114,6 @@
             }
         });
 
-        let isSpinning = false;
-        let currentRotation = 0;
-        let spinQueue = []; 
-
         function processQueue() {
             if (spinQueue.length > 0 && !isSpinning) {
                 const nextReward = spinQueue.shift();
@@ -134,7 +124,7 @@
         function startSpin(targetReward) {
             isSpinning = true;
             
-            // 重置文字與狀態
+            // 開始轉動時，重置為旋轉中
             resDiv.innerText = "💃 回転中... 💃";
             resDiv.classList.remove('show-result');
 
@@ -143,16 +133,14 @@
             const segmentAngle = 360 / options.length;
             const stopAngle = 360 - (finalIdx * segmentAngle) - (segmentAngle / 2);
             
-            // 轉動 12 圈後停在目標
             currentRotation += (12 * 360) + (stopAngle - (currentRotation % 360));
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
-            // 轉盤動畫結束 (5.2秒)
             setTimeout(() => {
+                // 顯示結果
                 resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
                 
-                // 結束本次 spin 狀態，但不清空文字，讓結果掛著直到下一抽
                 setTimeout(() => {
                     resDiv.classList.remove('show-result');
                     isSpinning = false;
