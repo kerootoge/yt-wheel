@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>轉盤演出系統 - 文字固定版</title>
+    <title>轉盤演出系統 - 標準固定版</title>
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body { 
@@ -16,49 +16,42 @@
             overflow: hidden; 
         }
 
-        /* --- [關鍵] 文字顯示區：獨立釘在畫面原本的位置 --- */
+        /* --- 轉盤總容器：釘死在左下角 --- */
+        #wheel-container { 
+            position: absolute; 
+            bottom: 50px; 
+            left: 50px; 
+            width: 600px; 
+            height: 600px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- 文字顯示區：固定在轉盤正上方 --- */
         #result-display { 
             position: absolute;
-            /* 調整這裡來決定文字在螢幕上的死位置 */
-            bottom: 700px; /* 放在轉盤初始位置的上方 */
-            left: 80px;
+            top: -100px; /* 距離轉盤上邊緣的距離 */
+            width: 800px;
             font-size: 70px; 
             font-weight: bold; 
+            text-align: center;
             transition: all 0.3s ease; 
             color: #ffffff;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 15px #2ecc71; 
-            z-index: 20;
-            white-space: nowrap;
+            letter-spacing: 2px;
         }
 
+        /* 中獎時僅改變顏色與發光，不改變大小 */
         .show-result {
-            transform: scale(1.1);
             color: #a1e5a1 !important;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 25px #2ecc71 !important;
-        }
-
-        /* --- 轉盤容器 --- */
-        #wheel-container { 
-            position: absolute; 
-            bottom: 80px;  
-            left: 80px; 
-            width: 600px; 
-            height: 600px; 
-            
-            /* Photoshop 左下釘死，往右上放大 */
-            transform-origin: left bottom; 
-            transition: transform 1.2s cubic-bezier(0.15, 0, 0.15, 1);
-            transform: scale(1.0);
-        }
-
-        /* 轉動時放大五倍，文字不會跟著動，因為它不在這個 div 裡 */
-        .wheel-spinning {
-            transform: scale(5.0) !important; 
         }
 
         canvas { 
             width: 100%; 
             height: 100%; 
+            /* 轉動動畫：5秒平滑旋轉 */
             transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); 
         }
 
@@ -78,16 +71,14 @@
 </head>
 <body>
 
-    <div id="result-display">SCで回転！</div>
-
     <div id="wheel-container">
+        <div id="result-display">SCで回転！</div>
         <div id="arrow"></div>
         <canvas id="wheel" width="600" height="600"></canvas>
     </div>
 
     <script>
         const canvas = document.getElementById('wheel');
-        const wheelContainer = document.getElementById('wheel-container');
         const ctx = canvas.getContext('2d');
         const resDiv = document.getElementById('result-display');
         
@@ -142,25 +133,26 @@
 
         function startSpin(targetReward) {
             isSpinning = true;
+            
+            // 重置文字與狀態
             resDiv.innerText = "💃 回転中... 💃";
             resDiv.classList.remove('show-result');
-            
-            // 轉盤往右上放大，文字維持不動
-            wheelContainer.classList.add('wheel-spinning');
 
             const matchingIndices = options.map((v, i) => v === targetReward ? i : -1).filter(i => i !== -1);
             const finalIdx = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
             const segmentAngle = 360 / options.length;
             const stopAngle = 360 - (finalIdx * segmentAngle) - (segmentAngle / 2);
             
+            // 轉動 12 圈後停在目標
             currentRotation += (12 * 360) + (stopAngle - (currentRotation % 360));
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
+            // 轉盤動畫結束 (5.2秒)
             setTimeout(() => {
                 resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
-                wheelContainer.classList.remove('wheel-spinning');
                 
+                // 結束本次 spin 狀態，但不清空文字，讓結果掛著直到下一抽
                 setTimeout(() => {
                     resDiv.classList.remove('show-result');
                     isSpinning = false;
