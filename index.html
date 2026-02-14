@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>轉盤演出系統 - 500px位移與自動復歸版</title>
+    <title>轉盤演出系統 - 位移修正版</title>
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body { 
@@ -18,19 +18,18 @@
             overflow: hidden; 
         }
 
-        /* 總容器 */
+        /* 總容器：負責全體上移的動畫 */
         #main-stage {
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* 調整位移動畫的平滑度，1.2秒讓大範圍移動更穩定 */
-            transition: transform 1.2s cubic-bezier(0.15, 0, 0.15, 1);
+            transition: transform 1.0s cubic-bezier(0.15, 0, 0.15, 1); /* 平滑上移縮回 */
             transform: translateY(0);
         }
 
-        /* 轉動時全體上移 250px */
+        /* 轉動時全體上移 200px */
         .stage-active {
-            transform: translateY(-250px) ;
+            transform: translateY(-200px) !important;
         }
 
         #result-display { 
@@ -95,7 +94,6 @@
         let isSpinning = false;
         let currentRotation = 0;
         let spinQueue = []; 
-        let resetTimer = null; // 用來存放 30 秒復歸的計時器
 
         function drawWheel() {
             const arc = (2 * Math.PI) / options.length;
@@ -142,10 +140,7 @@
         function startSpin(targetReward) {
             isSpinning = true;
             
-            // 如果這抽開始時，上一次的 30 秒復歸還沒跑完，直接取消它
-            if (resetTimer) clearTimeout(resetTimer);
-            
-            // 開始演出：全體上移 500px，文字變更
+            // 1. 開始轉動：全體上移 200px，文字變更
             mainStage.classList.add('stage-active');
             resDiv.innerText = "💃 回転中... 💃";
             resDiv.classList.remove('show-result');
@@ -158,32 +153,20 @@
             currentRotation += (12 * 360) + (stopAngle - (currentRotation % 360));
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
-            // 轉盤停止時 (5.2秒後)
+            // 2. 轉盤停下時 (5.2秒後)
             setTimeout(() => {
                 resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
                 
-                // 停留一小段時間後降回原位
+                // 3. 演出完畢，縮回原位 (讓結果顯示 0.5 秒後才回位，視覺較順)
                 setTimeout(() => {
                     mainStage.classList.remove('stage-active');
                     resDiv.classList.remove('show-result');
                     isSpinning = false;
-
-                    // 關鍵功能：設定 30 秒後自動將文字切回「SCで回転！」
-                    resetTimer = setTimeout(() => {
-                        if (!isSpinning) { // 確保 30 秒後沒有正在進行下一抽
-                            resDiv.innerText = "SCで回転！";
-                        }
-                    }, 30000);
-
-                    // 檢查隊列中是否有下一抽
                     processQueue(); 
-                }, 800); 
+                }, 500); 
             }, 5200);
         }
     </script>
 </body>
 </html>
-
-
-
