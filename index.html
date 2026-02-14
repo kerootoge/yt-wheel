@@ -94,6 +94,7 @@
         let isSpinning = false;
         let currentRotation = 0;
         let spinQueue = []; 
+        let resetTimer = null; // 用來記錄 30 秒復歸的計時器
 
         function drawWheel() {
             const arc = (2 * Math.PI) / options.length;
@@ -140,6 +141,9 @@
         function startSpin(targetReward) {
             isSpinning = true;
             
+            // 每次開始轉動時，清除上一次的自動復歸計時器
+            if (resetTimer) clearTimeout(resetTimer);
+
             // 1. 開始轉動：全體上移 200px，文字變更
             mainStage.classList.add('stage-active');
             resDiv.innerText = "💃 回転中... 💃";
@@ -158,11 +162,19 @@
                 resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
                 
-                // 3. 演出完畢，縮回原位 (讓結果顯示 0.5 秒後才回位，視覺較順)
+                // 3. 演出完畢，縮回原位
                 setTimeout(() => {
                     mainStage.classList.remove('stage-active');
                     resDiv.classList.remove('show-result');
                     isSpinning = false;
+
+                    // 在此處加入：演出結束 30 秒後切回原本字樣
+                    resetTimer = setTimeout(() => {
+                        if (!isSpinning) {
+                            resDiv.innerText = "SCで回転！";
+                        }
+                    }, 30000);
+
                     processQueue(); 
                 }, 500); 
             }, 5200);
