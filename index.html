@@ -2,13 +2,13 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>轉盤演出系統 - PS縮放邏輯版</title>
+    <title>轉盤演出系統 - 文字固定版</title>
     <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
     <style>
         body { 
             background: transparent; 
             color: white; 
-            font-family: "Microsoft JhengHei", sans-serif; 
+            font-family: "Microsoft JhengHei", "Meiryo", sans-serif; 
             margin: 0; 
             height: 100vh; 
             width: 100vw;
@@ -16,41 +16,42 @@
             overflow: hidden; 
         }
 
-        /* 文字顯示：放在左上角或固定位置 */
+        /* --- [關鍵] 文字顯示區：獨立釘在畫面原本的位置 --- */
         #result-display { 
             position: absolute;
-            top: 50px;
-            left: 50px;
+            /* 調整這裡來決定文字在螢幕上的死位置 */
+            bottom: 700px; /* 放在轉盤初始位置的上方 */
+            left: 80px;
             font-size: 70px; 
             font-weight: bold; 
             transition: all 0.3s ease; 
             color: #ffffff;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 15px #2ecc71; 
             z-index: 20;
+            white-space: nowrap;
         }
 
         .show-result {
             transform: scale(1.1);
             color: #a1e5a1 !important;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8), 0 0 25px #2ecc71 !important;
         }
 
         /* --- 轉盤容器 --- */
         #wheel-container { 
             position: absolute; 
-            /* 假設轉盤原本放在畫面偏左下的位置 */
-            bottom: 50px; 
-            left: 50px; 
+            bottom: 80px;  
+            left: 80px; 
             width: 600px; 
             height: 600px; 
             
-            /* [核心修改] 像 PS 一樣釘住左下角，往右上放大 */
+            /* Photoshop 左下釘死，往右上放大 */
             transform-origin: left bottom; 
-            
             transition: transform 1.2s cubic-bezier(0.15, 0, 0.15, 1);
             transform: scale(1.0);
         }
 
-        /* 轉動時放大五倍 (這時會自動往右上長) */
+        /* 轉動時放大五倍，文字不會跟著動，因為它不在這個 div 裡 */
         .wheel-spinning {
             transform: scale(5.0) !important; 
         }
@@ -71,11 +72,13 @@
             border-right: 30px solid transparent; 
             border-top: 50px solid #2ecc71; 
             z-index: 10; 
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
         }
     </style>
 </head>
 <body>
-    <div id="result-display">準備中</div>
+
+    <div id="result-display">SCで回転！</div>
 
     <div id="wheel-container">
         <div id="arrow"></div>
@@ -101,7 +104,7 @@
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.arc(0, 0, 280, 0, arc);
-                ctx.fillStyle = colorMap[text];
+                ctx.fillStyle = colorMap[text] || "#2ecc71";
                 ctx.fill();
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 6;
@@ -139,11 +142,10 @@
 
         function startSpin(targetReward) {
             isSpinning = true;
-            
-            resDiv.innerText = "💃 轉動中... 💃";
+            resDiv.innerText = "💃 回転中... 💃";
             resDiv.classList.remove('show-result');
             
-            // 轉盤「往右上拉大」
+            // 轉盤往右上放大，文字維持不動
             wheelContainer.classList.add('wheel-spinning');
 
             const matchingIndices = options.map((v, i) => v === targetReward ? i : -1).filter(i => i !== -1);
@@ -157,8 +159,6 @@
             setTimeout(() => {
                 resDiv.innerText = "💃 " + targetReward + " 💃";
                 resDiv.classList.add('show-result');
-                
-                // 轉完後縮回原位
                 wheelContainer.classList.remove('wheel-spinning');
                 
                 setTimeout(() => {
